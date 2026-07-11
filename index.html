@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<!-- критика: Ф5 И4 Исп5 К5 Сд5 Р4 — editorial engineering log, монохром+1 акцент, serif display + mono, левое выравнивание, ноль карточек-в-3-колонки -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ivan — engineering log</title>
+<meta name="description" content="Ivan (Socialpranker). Fixing bugs in other people&rsquo;s open source, and writing down what actually broke.">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f4f1ea;
+    --muted: #6b6559;
+    --line: #d8d2c4;
+    --accent: #a8321e;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8e4da;
+      --paper: #17150f;
+      --muted: #948d7e;
+      --line: #322e24;
+      --accent: #e0674f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 19px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* masthead — газетный, не SaaS-навбар */
+  header { border-bottom: 2px solid var(--ink); margin-top: 3.5rem; }
+  .masthead {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    justify-content: space-between; gap: 0.5rem 1rem; padding-bottom: 0.6rem;
+  }
+  .masthead h1 {
+    font-size: clamp(2.4rem, 7vw, 3.6rem); line-height: 1; margin: 0;
+    letter-spacing: -0.02em; font-weight: 600;
+  }
+  .masthead .meta {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.12em; text-align: right;
+  }
+  .masthead .meta a { color: var(--muted); }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+  .lede {
+    font-size: 1.32rem; line-height: 1.5; margin: 2.2rem 0 0;
+    color: var(--ink);
+  }
+  .lede em { font-style: italic; }
+
+  section { margin-top: 3.2rem; }
+  h2 {
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted);
+    margin: 0 0 1.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--line);
+  }
+  p { margin: 0 0 1.1rem; }
+  .muted { color: var(--muted); }
+
+  /* журнал: записи, не карточки. Разные, живут в потоке. */
+  .entry { padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
+  .entry:first-of-type { padding-top: 0; }
+  .entry-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  .entry-head .repo {
+    font-family: var(--mono); font-size: 0.9rem; font-weight: 600;
+    color: var(--ink);
+  }
+  .entry-head .diff {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; margin-left: auto;
+  }
+  .entry-head .diff .add { color: #4f7a3a; }
+  .entry-head .diff .del { color: var(--accent); }
+  @media (prefers-color-scheme: dark) { .entry-head .diff .add { color: #7fae63; } }
+  .entry .title { font-size: 1.12rem; margin: 0 0 0.5rem; font-weight: 600; }
+  .entry .body { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
+  .entry .body .what { color: var(--muted); }
+
+  .ai-note {
+    font-size: 1rem; line-height: 1.62;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem;
+    margin: 0 0 1.1rem;
+  }
+  .ai-note strong { font-weight: 600; }
+  ul.plain { margin: 0 0 1.1rem; padding-left: 1.2rem; }
+  ul.plain li { margin-bottom: 0.4rem; font-size: 1rem; line-height: 1.55; }
+
+  footer {
+    margin: 4rem 0 3rem; padding-top: 1.2rem; border-top: 2px solid var(--ink);
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="masthead">
+      <h1>Ivan</h1>
+      <div class="meta">
+        Tallinn, Estonia<br>
+        <a href="https://github.com/Socialpranker">github.com/Socialpranker</a>
+      </div>
+    </div>
+  </header>
+
+  <p class="lede">
+    I read other people&rsquo;s open source, find the bug the issue is actually about,
+    and send the smallest fix that holds. This is where I write down <em>what really broke</em>,
+    because the root cause is almost never where the stack trace points.
+  </p>
+
+  <section>
+    <h2>How I work</h2>
+    <p>
+      I don&rsquo;t chase easy issues. I go for the ones where a maintainer already
+      said &ldquo;PR welcome&rdquo; but nobody has done the reading yet: figure out the exact
+      failure, confirm it against the real code, write a test that fails without
+      the fix, then keep the change as small as the problem allows.
+    </p>
+    <p>
+      Half the value is knowing when <em>not</em> to send a patch. If a fix would
+      break the project&rsquo;s own examples, or the real problem is a maintainer-only
+      release decision, the honest move is to say so on the issue and stop, not to
+      ship something that gets closed.
+    </p>
+  </section>
+
+  <section>
+    <h2>Working with AI, openly</h2>
+    <p class="ai-note">
+      I use <strong>Claude Code</strong> as part of how I work, and I disclose it on every
+      pull request. I&rsquo;m not hiding it, so here&rsquo;s the honest version of what that means.
+    </p>
+    <p><strong>What I use it for:</strong></p>
+    <ul class="plain">
+      <li>Reading unfamiliar codebases fast, so I can find where a bug actually lives instead of guessing.</li>
+      <li>Reproducing the failure and drafting the fix and the test that proves it.</li>
+      <li>Checking a repo&rsquo;s contribution rules and AI policy before I touch anything, and following them.</li>
+    </ul>
+    <p><strong>What I check myself, every time:</strong></p>
+    <ul class="plain">
+      <li>That the bug reproduces and the fix genuinely resolves it, not just that tests are green.</li>
+      <li>That the change is the smallest one that works, and doesn&rsquo;t quietly break the project&rsquo;s examples or CI.</li>
+      <li>That the PR reads like a person wrote it, because a wall of generated prose wastes a maintainer&rsquo;s time.</li>
+    </ul>
+    <p class="muted">
+      Yes, the pace looks automated from the outside. It is assisted. It is also
+      reviewed, tested, and owned by me. If a maintainer ever wants a change reverted
+      or has doubts, that&rsquo;s on me to answer, not on a tool.
+    </p>
+  </section>
+
+  <section>
+    <h2>Recent fixes</h2>
+
+    <div class="entry">
+      <div class="entry-head">
+        <span class="repo">restic/restic</span>
+        <span class="diff"><span class="add">+91</span> <span class="del">-20</span></span>
+      </div>
+      <p class="title">A race in <code>restic init</code> could orphan a key file</p>
+      <p class="body"><span class="what">What broke:</span> init wrote the key file before the config
+      file, so two clients initializing the same repo at once could leave a key that no config
+      ever pointed at. The fix reorders the two writes and moves key generation into the caller,
+      so config lands first.</p>
+    </div>
+
+    <div class="entry">
+      <div class="entry-head">
+        <span class="repo">vectordotdev/vector</span>
+        <span class="diff"><span class="add">+52</span> <span class="del">-3</span></span>
+      </div>
+      <p class="title">S3 sink rejected by Cloudflare R2 with InvalidRequest</p>
+      <p class="body"><span class="what">What broke:</span> Vector sent its own Content-MD5 plus the
+      AWS SDK&rsquo;s newer checksum headers on every upload. Standard S3 tolerates both; R2 refuses more
+      than one non-default checksum. The fix limits checksum calculation to when it&rsquo;s actually required.</p>
+    </div>
+
+    <div class="entry">
+      <div class="entry-head">
+        <span class="repo">prettier/prettier</span>
+        <span class="diff"><span class="add">+68</span> <span class="del">-0</span></span>
+      </div>
+      <p class="title"><code>import.meta</code> silently dropped a whole script block</p>
+      <p class="body"><span class="what">What broke:</span> in a non-module <code>&lt;script&gt;</code>,
+      Babel rejects <code>import.meta</code>, and the HTML embed logic swallows any embed that throws,
+      so the entire block came out unformatted. The real fix was one line in the Babel error-recovery
+      allowlist, not in the formatter.</p>
+    </div>
+
+    <div class="entry">
+      <div class="entry-head">
+        <span class="repo">zellij-org/zellij</span>
+        <span class="diff"><span class="add">+108</span> <span class="del">-0</span></span>
+      </div>
+      <p class="title">Can&rsquo;t bind <code>Ctrl+\</code> as a key</p>
+      <p class="body"><span class="what">What broke:</span> the key map only covered Ctrl+A..Z. Control
+      chars from Ctrl with non-letters (<code>\</code>, <code>]</code>, <code>^</code>, <code>_</code>)
+      fell through with no modifier attached, so the bind never matched. Fixed at the call site, leaving
+      the vendored code untouched.</p>
+    </div>
+
+    <div class="entry">
+      <div class="entry-head">
+        <span class="repo">rclone/rclone</span>
+        <span class="diff"><span class="add">+19</span> <span class="del">-4</span></span>
+      </div>
+      <p class="title"><code>nfsmount</code> passed Linux options to OpenBSD&rsquo;s mount_nfs</p>
+      <p class="body"><span class="what">What broke:</span> the mount options were hardcoded in GNU
+      syntax, so OpenBSD&rsquo;s <code>mount_nfs</code> rejected <code>mountport</code>. Added a GOOS branch
+      for OpenBSD&rsquo;s syntax, matched the man page, and said plainly in the PR that a BSD user should
+      confirm at runtime since I couldn&rsquo;t.</p>
+    </div>
+
+    <div class="entry">
+      <div class="entry-head">
+        <span class="repo">sveltejs/kit</span>
+        <span class="diff"><span class="add">+24</span> <span class="del">-14</span></span>
+      </div>
+      <p class="title">A cookie-size limit that was a magic number</p>
+      <p class="body"><span class="what">What broke:</span> <code>MAX_COOKIE_SIZE</code> was 4129 and
+      compared against the whole serialized cookie. The spec&rsquo;s 4096 is for name and value only, so the
+      fix aligns the value and checks the right thing. Also found the existing test was a no-op.</p>
+    </div>
+
+  </section>
+
+  <section>
+    <h2>Colophon</h2>
+    <p class="muted">
+      Set in the system&rsquo;s old-style serif with a monospace for code. No trackers,
+      no analytics, one file. The name Socialpranker is old; the work here isn&rsquo;t a joke.
+    </p>
+  </section>
+
+  <footer>
+    <span>Ivan · Tallinn</span>
+    <span><a href="https://github.com/Socialpranker">github.com/Socialpranker</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
