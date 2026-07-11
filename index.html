@@ -149,13 +149,19 @@
   <section>
     <h2>Working with AI, openly</h2>
     <p class="ai-note">
-      I use <strong>Claude Code</strong> as part of how I work, and I disclose it on every
-      pull request. Here is what that means in practice.
+      I use AI as part of how I work, and I disclose it on every pull request, naming
+      the model that did the bulk of the work on that specific change. Here is what
+      that means in practice.
     </p>
+    <p><strong>How I route it:</strong></p>
+    <ul class="plain">
+      <li>I run a few models and pick by how hard the task is, not by brand loyalty. Claude (Opus for tricky logic and concurrency, Sonnet for the actual implementation, Haiku for search and reading), plus GPT, Grok, and GLM when a second opinion or a different strength helps.</li>
+      <li>Cheap, wide work (grepping a large codebase, reading unfamiliar files) goes to the fast, small models. The careful reasoning (root cause, race conditions, edge cases) goes to the strongest one I have.</li>
+      <li>When two models disagree about a root cause, that disagreement is useful. I dig until I can tell which one is right, in the code.</li>
+    </ul>
     <p><strong>What I use it for:</strong></p>
     <ul class="plain">
-      <li>Reading unfamiliar codebases fast, so I can find where a bug actually lives instead of guessing.</li>
-      <li>Reproducing the failure and drafting the fix and the test that proves it.</li>
+      <li>Finding where a bug actually lives instead of guessing, then reproducing the failure and drafting the fix and the test that proves it.</li>
       <li>Checking a repo&rsquo;s contribution rules and AI policy before I touch anything, and following them.</li>
     </ul>
     <p><strong>What I check myself, every time:</strong></p>
