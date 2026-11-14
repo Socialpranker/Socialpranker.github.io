@@ -7,6 +7,15 @@
 <title>SocialPranker — bugs and vulnerabilities in open source</title>
 <meta name="description" content="SocialPranker. Hunting bugs and vulnerabilities in other people&rsquo;s open source, sending the smallest fix that holds, and writing down what actually broke.">
 <meta name="theme-color" content="#050304">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://socialpranker.github.io/">
+<meta property="og:title" content="SocialPranker — bugs and vulnerabilities in open source">
+<meta property="og:description" content="Hunting bugs and vulnerabilities in other people&rsquo;s open source, and writing down what actually broke.">
+<meta property="og:image" content="https://socialpranker.github.io/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <script>
   /* до первой отрисовки: решаем, будет ли движение и интро, чтобы страница не мигнула под заставкой */
   (function () {
@@ -220,6 +229,14 @@
   .entry-head .diff { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
   .entry-head .diff .add { color: var(--teal); }
   .entry-head .diff .del { color: var(--red); }
+  .entry-head .pr { color: var(--muted); }
+  .entry-head .pr:hover { color: var(--red); }
+  .entry-head .st {
+    padding: 0.05rem 0.4rem; border: 1px solid var(--line);
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .entry-head .st.merged { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 45%, transparent); }
+  .entry-head .st.open { color: var(--ink); }
   .entry .title {
     margin: 0 0 0.55rem;
     font-family: var(--display); font-weight: 600;
@@ -417,6 +434,7 @@
       <div class="wall" aria-hidden="true"></div>
       <div class="readout">
         <span>Fixes logged <b>6</b></span>
+        <span>Merged <b>2</b></span>
         <span>Lines <b class="add">+362</b> <b class="del">-41</b></span>
         <span>Trackers <b>0</b></span>
       </div>
@@ -446,7 +464,7 @@
     </p>
   </section>
 
-  <section>
+  <section id="vulnerability-hunting">
     <h2>Vulnerability hunting</h2>
     <p>
       Same reading, different question. Instead of &ldquo;why does this fail&rdquo;, it&rsquo;s
@@ -503,6 +521,8 @@
     <div class="entry framed">
       <div class="entry-head">
         <span class="repo">restic/restic</span>
+        <a class="pr" href="https://github.com/restic/restic/pull/21944">#21944</a>
+        <span class="st open">open</span>
         <span class="diff"><span class="add">+91</span> <span class="del">-20</span></span>
       </div>
       <p class="title">A race in <code>restic init</code> could orphan a key file</p>
@@ -515,6 +535,8 @@
     <div class="entry framed">
       <div class="entry-head">
         <span class="repo">vectordotdev/vector</span>
+        <a class="pr" href="https://github.com/vectordotdev/vector/pull/25803">#25803</a>
+        <span class="st open">open</span>
         <span class="diff"><span class="add">+52</span> <span class="del">-3</span></span>
       </div>
       <p class="title">S3 sink rejected by Cloudflare R2 with InvalidRequest</p>
@@ -526,6 +548,8 @@
     <div class="entry framed">
       <div class="entry-head">
         <span class="repo">prettier/prettier</span>
+        <a class="pr" href="https://github.com/prettier/prettier/pull/19590">#19590</a>
+        <span class="st closed">closed</span>
         <span class="diff"><span class="add">+68</span> <span class="del">-0</span></span>
       </div>
       <p class="title"><code>import.meta</code> silently dropped a whole script block</p>
@@ -538,6 +562,8 @@
     <div class="entry framed">
       <div class="entry-head">
         <span class="repo">zellij-org/zellij</span>
+        <a class="pr" href="https://github.com/zellij-org/zellij/pull/5354">#5354</a>
+        <span class="st open">open</span>
         <span class="diff"><span class="add">+108</span> <span class="del">-0</span></span>
       </div>
       <p class="title">Can&rsquo;t bind <code>Ctrl+\</code> as a key</p>
@@ -550,6 +576,8 @@
     <div class="entry framed">
       <div class="entry-head">
         <span class="repo">rclone/rclone</span>
+        <a class="pr" href="https://github.com/rclone/rclone/pull/9597">#9597</a>
+        <span class="st merged">merged</span>
         <span class="diff"><span class="add">+19</span> <span class="del">-4</span></span>
       </div>
       <p class="title"><code>nfsmount</code> passed Linux options to OpenBSD&rsquo;s mount_nfs</p>
@@ -562,6 +590,8 @@
     <div class="entry framed">
       <div class="entry-head">
         <span class="repo">sveltejs/kit</span>
+        <a class="pr" href="https://github.com/sveltejs/kit/pull/16322">#16322</a>
+        <span class="st merged">merged</span>
         <span class="diff"><span class="add">+24</span> <span class="del">-14</span></span>
       </div>
       <p class="title">A cookie-size limit that was a magic number</p>
@@ -575,7 +605,7 @@
   <section>
     <h2>Colophon</h2>
     <p class="muted">
-      One static HTML file, no build step, no trackers, no analytics. Set in
+      Static HTML with no build step, no trackers, no analytics. Set in
       Barlow Condensed and Barlow, with JetBrains Mono for code and data; the
       fonts load from Google Fonts.
     </p>
