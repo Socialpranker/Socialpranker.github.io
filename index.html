@@ -4,8 +4,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ion — engineering log</title>
-<meta name="description" content="Ion (Socialpranker). Fixing bugs in other people&rsquo;s open source, and writing down what actually broke.">
+<title>SocialPranker — bugs and vulnerabilities in open source</title>
+<meta name="description" content="SocialPranker. Hunting bugs and vulnerabilities in other people&rsquo;s open source, sending the smallest fix that holds, and writing down what actually broke.">
 <meta name="theme-color" content="#050304">
 <script>
   /* до первой отрисовки: решаем, будет ли движение и интро, чтобы страница не мигнула под заставкой */
@@ -99,8 +99,8 @@
     position: relative; display: inline-block;
     margin: 0;
     font-family: var(--display); font-weight: 700;
-    font-size: clamp(7rem, 34vw, 15rem);
-    line-height: 0.82; letter-spacing: -0.01em; text-transform: uppercase;
+    font-size: clamp(3.4rem, 16.5vw, 8.6rem);
+    line-height: 0.86; letter-spacing: -0.01em;
     color: var(--ink);
     cursor: default;
   }
@@ -413,7 +413,7 @@
       <a href="https://github.com/Socialpranker">github.com/Socialpranker</a>
     </div>
     <div class="hero">
-      <h1 class="glitch"><span>Ion</span><span class="g-layer" aria-hidden="true">Ion</span><span class="g-layer" aria-hidden="true">Ion</span></h1>
+      <h1 class="glitch"><span>SocialPranker</span><span class="g-layer" aria-hidden="true">SocialPranker</span><span class="g-layer" aria-hidden="true">SocialPranker</span></h1>
       <div class="wall" aria-hidden="true"></div>
       <div class="readout">
         <span>Fixes logged <b>6</b></span>
@@ -424,9 +424,10 @@
   </header>
 
   <p class="lede">
-    I read other people&rsquo;s open source, find the bug the issue is actually about,
-    and send the smallest fix that holds. This page is a log of those fixes and
-    <em>what actually broke</em> in each one.
+    I read other people&rsquo;s open source looking for two things: the bug an issue
+    is actually about, and the vulnerability nobody has filed yet. Bugs get the
+    smallest fix that holds. Vulnerabilities go to the maintainers privately first.
+    This page is a log of the fixes and <em>what actually broke</em> in each one.
   </p>
 
   <section>
@@ -442,6 +443,26 @@
       break the project&rsquo;s own examples, or the real problem is a maintainer-only
       release decision, the honest move is to say so on the issue and stop, not to
       ship something that gets closed.
+    </p>
+  </section>
+
+  <section>
+    <h2>Vulnerability hunting</h2>
+    <p>
+      Same reading, different question. Instead of &ldquo;why does this fail&rdquo;, it&rsquo;s
+      &ldquo;who else can make this fail on purpose&rdquo;: input the code trusts and
+      shouldn&rsquo;t, two modules that disagree about what a field means, a check that
+      runs one step after the thing it was supposed to guard.
+    </p>
+    <ul class="plain">
+      <li>A finding isn&rsquo;t a finding until it reproduces. I write a proof of concept and run it in a container against the vulnerable version and the patched one. If it doesn&rsquo;t break the first and pass on the second, it goes nowhere.</li>
+      <li>Before reporting, I try to knock the finding down myself. Most candidates die here, and that&rsquo;s the point.</li>
+      <li>Reports go privately, through the project&rsquo;s <code>SECURITY.md</code> or a GitHub security advisory, never as a public issue. Details stay private until a fix ships.</li>
+      <li>I test code I can run myself. No scanners spraying other people&rsquo;s servers.</li>
+    </ul>
+    <p class="muted">
+      Disclosed vulnerabilities will show up here after they&rsquo;re patched. Until
+      then, the CVEs in the corner are other people&rsquo;s.
     </p>
   </section>
 
@@ -561,14 +582,14 @@
   </section>
 
   <footer>
-    <span>Ion</span>
+    <span>SocialPranker</span>
     <span><a href="https://github.com/Socialpranker">github.com/Socialpranker</a></span>
   </footer>
 
 </div>
 
 <div class="hud">
-  <span class="depth" aria-hidden="true">Depth <b>00 / 04</b></span>
+  <span class="depth" aria-hidden="true">Depth <b>00 / 05</b></span>
   <span class="sector" aria-hidden="true">Surface</span>
   <span class="bar" aria-hidden="true"><i></i></span>
   <button class="motion-toggle" type="button">Motion: on</button>
@@ -773,7 +794,7 @@
   });
 
   console.log(
-    '%cION%c\nYou opened DevTools on a static page. Respect.\nOne HTML file, no build step. The source is the documentation.\nFound a bug? You know the drill: issue, failing test, smallest fix.\n→ https://github.com/Socialpranker/Socialpranker.github.io',
+    '%cSocialPranker%c\nYou opened DevTools on a static page. Respect.\nOne HTML file, no build step. The source is the documentation.\nFound a bug? You know the drill: issue, failing test, smallest fix.\nFound a vulnerability? Same drill, but report it privately first.\n→ https://github.com/Socialpranker/Socialpranker.github.io',
     'font: 700 28px sans-serif; color: #ff2a3d;',
     'font: 12px monospace; color: #9a8a8c;'
   );
