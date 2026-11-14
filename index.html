@@ -7,6 +7,23 @@
 <title>Ion — engineering log</title>
 <meta name="description" content="Ion (Socialpranker). Fixing bugs in other people&rsquo;s open source, and writing down what actually broke.">
 <meta name="theme-color" content="#050304">
+<script>
+  /* до первой отрисовки: решаем, будет ли движение и интро, чтобы страница не мигнула под заставкой */
+  (function () {
+    var d = document.documentElement;
+    d.classList.add('js');
+    try {
+      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var pref = localStorage.getItem('ion-motion');
+      var motion = pref ? pref === 'on' : !reduce;
+      if (motion) d.classList.add('motion');
+      if (motion && !sessionStorage.getItem('ion-jacked')) {
+        d.classList.add('jack');
+        setTimeout(function () { d.classList.remove('jack'); }, 9000);
+      }
+    } catch (e) {}
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -50,7 +67,7 @@
   }
   ::selection { background: var(--red); color: var(--void); }
 
-  .wrap { max-width: 50rem; margin: 0 auto; padding: 0 1.5rem; }
+  .wrap { position: relative; z-index: 1; max-width: 50rem; margin: 0 auto; padding: 0 1.5rem; }
 
   a { color: var(--red); text-decoration: none; }
   a:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -94,12 +111,11 @@
   }
   .glitch .g-layer:nth-of-type(2) { color: var(--red); }
   .glitch .g-layer:nth-of-type(3) { color: var(--blood); }
-  @media (prefers-reduced-motion: no-preference) {
-    .glitch .g-layer:nth-of-type(2) { animation: slice-a 0.7s steps(1) 0.25s 1; }
-    .glitch .g-layer:nth-of-type(3) { animation: slice-b 0.7s steps(1) 0.25s 1; }
-    .glitch:hover .g-layer:nth-of-type(2) { animation: slice-a2 0.5s steps(1) 1; }
-    .glitch:hover .g-layer:nth-of-type(3) { animation: slice-b2 0.5s steps(1) 1; }
-  }
+  /* класс motion ставит скрипт в head: учитывает reduced-motion и кнопку выключения */
+  html.motion.ready .glitch .g-layer:nth-of-type(2) { animation: slice-a 0.7s steps(1) 0.25s 1; }
+  html.motion.ready .glitch .g-layer:nth-of-type(3) { animation: slice-b 0.7s steps(1) 0.25s 1; }
+  html.motion .glitch:hover .g-layer:nth-of-type(2) { animation: slice-a2 0.5s steps(1) 1; }
+  html.motion .glitch:hover .g-layer:nth-of-type(3) { animation: slice-b2 0.5s steps(1) 1; }
   @keyframes slice-a {
     0%   { visibility: visible; clip-path: inset(8% 0 72% 0);  transform: translate(-0.06em, 0); }
     20%  { visibility: visible; clip-path: inset(55% 0 30% 0); transform: translate(0.05em, 0); }
@@ -216,14 +232,12 @@
     letter-spacing: 0.1em; text-transform: uppercase; color: var(--red);
   }
 
-  /* записи «расшифровываются» при входе в экран; без поддержки или с reduced-motion видны сразу */
+  /* записи «расшифровываются» при входе в экран; без поддержки или без движения видны сразу */
   @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .entry {
-        animation: decrypt linear both;
-        animation-timeline: view();
-        animation-range: entry 0% entry 55%;
-      }
+    html.motion .entry {
+      animation: decrypt linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
     }
   }
   @keyframes decrypt {
@@ -241,8 +255,124 @@
   footer a { color: var(--muted); }
   footer a:hover { color: var(--red); }
 
+  /* ---- старая сеть: туннель на canvas за контентом */
+  #net { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+  /* интро: пока идёт подключение, страница скрыта под заставкой */
+  html.jack { overflow: hidden; }
+  html.jack .wrap, html.jack .hud { visibility: hidden; }
+  .jack-screen {
+    position: fixed; inset: 0; z-index: 50;
+    display: grid; align-content: end;
+    padding: 1.5rem clamp(1.2rem, 6vw, 4rem) clamp(2rem, 8vh, 4rem);
+    background: radial-gradient(ellipse at 50% 42%, transparent 0 25%, rgba(5, 3, 4, 0.88) 70%);
+    font-family: var(--mono); font-size: clamp(0.66rem, 1.6vw, 0.86rem); line-height: 1.75;
+    color: var(--muted);
+  }
+  .jack-screen pre { margin: 0; font: inherit; white-space: pre-wrap; }
+  .jack-screen .ok { color: var(--teal); }
+  .jack-screen .warn { color: var(--red); }
+  .jack-screen .hot { color: var(--ink); }
+  .jack-skip {
+    position: absolute; top: 1.1rem; right: clamp(1.2rem, 6vw, 4rem);
+    font: inherit; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); background: rgba(5, 3, 4, 0.7);
+    border: 1px solid var(--line); padding: 0.4rem 0.7rem; cursor: pointer;
+  }
+  .jack-skip:hover, .jack-skip:focus-visible { color: var(--red); border-color: var(--red); outline: none; }
+  .jack-screen.out { animation: jack-out 0.5s steps(5) forwards; }
+  @keyframes jack-out {
+    20%  { clip-path: inset(8% 0 40% 0);  transform: translateX(-14px); }
+    40%  { clip-path: inset(52% 0 18% 0); transform: translateX(20px); }
+    60%  { clip-path: inset(30% 0 60% 0); transform: translateX(-6px); }
+    80%  { clip-path: inset(70% 0 26% 0); transform: none; }
+    100% { clip-path: inset(50% 0 50% 0); opacity: 0; }
+  }
+  /* страница «собирается» после погружения: рывками, не плавно */
+  html.arrived .wrap { animation: arrive 0.7s steps(7) both; }
+  @keyframes arrive {
+    0%   { opacity: 0;   transform: scale(1.08); filter: blur(8px); }
+    30%  { opacity: 0.7; transform: scale(1.02) translateX(-10px); filter: blur(2px); }
+    45%  { opacity: 0.3; transform: translateX(8px); }
+    100% { opacity: 1;   transform: none; filter: none; }
+  }
+
+  /* лаг: страница дёргается, текст двоится, кадр рвётся полосами */
+  html.lag .wrap {
+    animation: jitter 0.3s steps(1) infinite;
+    text-shadow: -2px 0 rgba(255, 42, 61, 0.75), 2px 0 rgba(63, 224, 176, 0.35);
+  }
+  @keyframes jitter {
+    0%  { transform: translate(0, 0); }
+    20% { transform: translate(-6px, 1px); }
+    40% { transform: translate(4px, -1px) skewX(-3deg); }
+    60% { transform: translate(-2px, 2px); }
+    80% { transform: translate(3px, 0); }
+  }
+  .tear { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+  .tear i { position: absolute; left: 0; right: 0; display: block; }
+  .tear i.red  { background: rgba(255, 42, 61, 0.22); mix-blend-mode: screen; }
+  .tear i.drop { background: rgba(5, 3, 4, 0.92); }
+  .tear i.hue  { backdrop-filter: hue-rotate(150deg) saturate(2.5); -webkit-backdrop-filter: hue-rotate(150deg) saturate(2.5); }
+
+  /* погружение: раздел выплывает из глубины туннеля рывками */
+  html.dive section:not(.in) { opacity: 0; }
+  html.dive section.in { animation: dive 0.8s steps(8) both; }
+  @keyframes dive {
+    0%   { opacity: 0;    transform: perspective(900px) translateZ(-280px) rotateX(12deg); filter: blur(6px); }
+    40%  { opacity: 0.75; transform: perspective(900px) translateZ(-70px) translateX(-10px); filter: blur(1px); }
+    55%  { opacity: 0.35; transform: perspective(900px) translateZ(-40px) translateX(8px); }
+    100% { opacity: 1;    transform: none; filter: none; }
+  }
+  html.motion .entry:hover .title { animation: micro 0.3s steps(3) 1; }
+  @keyframes micro {
+    0%   { text-shadow: -3px 0 var(--red), 3px 0 var(--teal); transform: translateX(2px); }
+    33%  { text-shadow: 2px 0 var(--red), -2px 0 var(--teal); transform: translateX(-3px); }
+    66%  { text-shadow: none; transform: translateX(1px); }
+    100% { transform: none; }
+  }
+
+  /* датчик глубины: в каком разделе читатель и сколько пройдено */
+  .hud { display: none; }
+  html.js .hud {
+    position: fixed; right: 1rem; bottom: 1rem; z-index: 30;
+    display: grid; gap: 0.35rem; justify-items: end;
+    padding: 0.6rem 0.7rem;
+    background: rgba(5, 3, 4, 0.85); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .hud .depth b { color: var(--red); font-weight: 600; }
+  .hud .sector { color: var(--ink); }
+  .hud .bar { display: none; width: 9rem; height: 3px; background: var(--line); overflow: hidden; }
+  .hud .bar i { display: block; height: 100%; background: var(--red); transform-origin: left; transform: scaleX(0); }
+  @supports (animation-timeline: scroll()) {
+    .hud .bar { display: block; }
+    .hud .bar i { animation: fill linear both; animation-timeline: scroll(root); }
+  }
+  @keyframes fill { to { transform: scaleX(1); } }
+  .motion-toggle {
+    font: inherit; letter-spacing: inherit; text-transform: inherit;
+    color: var(--muted); background: none;
+    border: 1px solid var(--line); padding: 0.3rem 0.55rem; cursor: pointer;
+  }
+  .motion-toggle:hover, .motion-toggle:focus-visible { color: var(--red); border-color: var(--red); outline: none; }
+
+  /* пока колонка текста и датчик не помещаются рядом, датчик уходит в нижнюю строку */
+  @media (max-width: 1180px) {
+    html.js .hud {
+      left: 0; right: 0; bottom: 0;
+      grid-auto-flow: column; justify-content: space-between; align-items: center;
+      border-width: 1px 0 0; border-color: var(--blood);
+      padding: 0.45rem 1rem;
+    }
+    html.js .hud .bar { width: 5rem; }
+    html.js body { padding-bottom: 2.6rem; }
+  }
+
   @media (max-width: 520px) {
     body { font-size: 17px; }
+    html.js .hud .bar { display: none; }
     .entry { padding: 1rem 1rem 1.1rem; }
     .entry-head .diff { margin-left: 0; width: 100%; }
     h2 { font-size: 1.6rem; }
@@ -250,6 +380,7 @@
 </style>
 </head>
 <body>
+<canvas id="net" aria-hidden="true"></canvas>
 <div class="wrap">
 
   <header>
@@ -411,5 +542,269 @@
   </footer>
 
 </div>
+
+<div class="hud">
+  <span class="depth" aria-hidden="true">Depth <b>00 / 04</b></span>
+  <span class="sector" aria-hidden="true">Surface</span>
+  <span class="bar" aria-hidden="true"><i></i></span>
+  <button class="motion-toggle" type="button">Motion: on</button>
+</div>
+
+<script>
+(() => {
+  const html = document.documentElement;
+  let motion = html.classList.contains('motion');
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /* ---- туннель старой сети: рамки летят на зрителя из красной точки за стеной */
+  const cv = document.getElementById('net');
+  const ctx = cv.getContext('2d');
+  const RINGS = 22;
+  const rings = Array.from({ length: RINGS }, (_, i) => (i + 1) / RINGS);
+  const BASE = 0.12;
+  let W = 0, H = 0, t = 0, raf = 0, last = 0, acc = 0, frame = 0;
+  let speed = BASE, target = BASE, glow = 0.2, glowTarget = 0.2, freeze = false;
+
+  function size() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!raf) draw(0);
+  }
+
+  function draw(dt) {
+    speed += (target - speed) * Math.min(1, dt * 2.5);
+    glow += (glowTarget - glow) * Math.min(1, dt * 2);
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2 + Math.sin(t * 0.21) * W * 0.04;
+    const cy = H * 0.42 + Math.cos(t * 0.17) * H * 0.03;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = `rgba(122, 14, 26, ${Math.min(1, glow * 1.6)})`;
+    ctx.beginPath();
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2 + 0.2;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a) * W * 1.5, cy + Math.sin(a) * W * 1.5);
+    }
+    ctx.stroke();
+
+    for (let i = 0; i < RINGS; i++) {
+      let z = rings[i] - speed * dt;
+      if (z <= 0.03) z += 1;
+      rings[i] = z;
+      const s = 0.05 / z;
+      const w = W * s, h = H * s;
+      ctx.strokeStyle = `rgba(255, 42, 61, ${Math.min(1, glow * (1 - z) * 1.6)})`;
+      ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+    }
+
+    if (Math.random() < 0.2 + speed * 0.15) {
+      const n = speed > 1 ? 14 : 3;
+      for (let k = 0; k < n; k++) {
+        ctx.fillStyle = `rgba(255, 42, 61, ${Math.min(0.6, rnd(0.05, 0.35) * glow * 3)})`;
+        ctx.fillRect(rnd(0, W), rnd(0, H), rnd(10, 140), rnd(1, 4));
+      }
+    }
+
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * 0.35);
+    g.addColorStop(0, `rgba(255, 42, 61, ${glow * 0.45})`);
+    g.addColorStop(1, 'rgba(255, 42, 61, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function loop(now) {
+    raf = requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (now - (last || now)) / 1000);
+    last = now; acc += dt; frame++;
+    if (freeze && frame % 6) return; // во время лага кадры застревают
+    t += acc;
+    draw(acc);
+    acc = 0;
+  }
+  function start() { if (!raf && motion && !document.hidden) { last = 0; raf = requestAnimationFrame(loop); } }
+  function stop() { cancelAnimationFrame(raf); raf = 0; }
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  addEventListener('resize', size);
+  size();
+  start();
+
+  /* ---- лаг: рывок страницы, двоение текста, разрывы кадра, застывший туннель */
+  const tear = document.createElement('div');
+  tear.className = 'tear';
+  tear.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(tear);
+  let lagging = false;
+  function lag(power = 1) {
+    if (!motion || lagging || html.classList.contains('jack')) return;
+    lagging = true; freeze = true;
+    const kinds = ['red', 'drop', 'hue'];
+    const n = 2 + Math.round(power * 3);
+    tear.innerHTML = Array.from({ length: n }, () =>
+      `<i class="${kinds[Math.floor(Math.random() * kinds.length)]}" style="top:${rnd(0, 96).toFixed(1)}%;height:${rnd(0.4, 3.5 * power).toFixed(1)}%;transform:translateX(${rnd(-30, 30).toFixed(0)}px)"></i>`
+    ).join('');
+    html.classList.add('lag');
+    setTimeout(() => {
+      html.classList.remove('lag');
+      tear.innerHTML = '';
+      freeze = false; lagging = false;
+    }, rnd(160, 320) * power);
+  }
+  function pulse(power = 1) {
+    if (!motion) return;
+    target = BASE + 2.2 * power;
+    setTimeout(() => { target = BASE; }, 450);
+  }
+  (function ambient() {
+    setTimeout(() => { if (!document.hidden) lag(rnd(0.5, 1)); ambient(); }, rnd(7000, 15000));
+  })();
+  document.querySelector('.glitch').addEventListener('click', () => { lag(1.4); pulse(1); });
+
+  /* ---- погружение по разделам и датчик глубины */
+  const GLYPHS = '▓▒░<>/\\|#%&$*+=01';
+  function scramble(el, text, ms = 520) {
+    if (!motion) { el.textContent = text; return; }
+    const t0 = performance.now();
+    (function step(now) {
+      const p = Math.min(1, (now - t0) / ms);
+      let out = '';
+      for (let i = 0; i < text.length; i++) {
+        out += i < p * text.length || text[i] === ' ' ? text[i] : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      }
+      el.textContent = out;
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  const sections = [...document.querySelectorAll('section')];
+  const titles = sections.map((s) => s.querySelector('h2').textContent.trim());
+  const zones = [document.querySelector('header'), ...sections];
+  const zoneNames = ['Surface', ...titles];
+  const depthEl = document.querySelector('.hud .depth b');
+  const sectorEl = document.querySelector('.hud .sector');
+  const total = String(sections.length).padStart(2, '0');
+  let current = 0;
+
+  if (motion) html.classList.add('dive');
+  const reveal = new IntersectionObserver((items) => {
+    for (const it of items) {
+      if (!it.isIntersecting) continue;
+      const s = it.target;
+      reveal.unobserve(s);
+      s.classList.add('in');
+      scramble(s.querySelector('h2'), titles[sections.indexOf(s)], 650);
+    }
+  }, { threshold: 0.12 });
+  const watchSections = () => sections.forEach((s) => reveal.observe(s));
+
+  const depth = new IntersectionObserver((items) => {
+    for (const it of items) {
+      if (!it.isIntersecting) continue;
+      const i = zones.indexOf(it.target);
+      if (i === current) continue;
+      const deeper = i > current;
+      current = i;
+      depthEl.textContent = `${String(i).padStart(2, '0')} / ${total}`;
+      scramble(sectorEl, zoneNames[i], 400);
+      glowTarget = 0.18 + i * 0.05;
+      if (deeper) { pulse(0.8); lag(0.6); }
+    }
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  zones.forEach((z) => depth.observe(z));
+
+  /* ---- выключатель движения (WCAG 2.2.2): помнит выбор между визитами */
+  const toggle = document.querySelector('.motion-toggle');
+  function setMotion(on) {
+    motion = on;
+    html.classList.toggle('motion', on);
+    toggle.textContent = on ? 'Motion: on' : 'Motion: off';
+    try { localStorage.setItem('ion-motion', on ? 'on' : 'off'); } catch (e) {}
+    if (on) { start(); } else { stop(); speed = target = BASE; draw(0); }
+    if (!on) { html.classList.remove('dive', 'lag'); sections.forEach((s) => s.classList.add('in')); }
+  }
+  toggle.textContent = motion ? 'Motion: on' : 'Motion: off';
+  toggle.addEventListener('click', () => setMotion(!motion));
+
+  /* ---- интро: подключение к узлу и спуск по туннелю */
+  function arrive() {
+    html.classList.remove('jack');
+    html.classList.add('ready', 'arrived');
+    setTimeout(() => html.classList.remove('arrived'), 800);
+    watchSections();
+  }
+
+  async function jackIn() {
+    const scr = document.createElement('div');
+    scr.className = 'jack-screen';
+    scr.innerHTML = '<button class="jack-skip" type="button">Skip intro</button><pre aria-hidden="true"></pre>';
+    document.body.appendChild(scr);
+    const pre = scr.querySelector('pre');
+    let fast = false;
+    const skip = () => { fast = true; };
+    scr.querySelector('button').addEventListener('click', skip);
+    addEventListener('keydown', skip, { once: true });
+    const wait = (ms) => (fast ? Promise.resolve() : sleep(ms));
+
+    glow = glowTarget = 0.6;
+    target = 0.4;
+
+    async function row(label, status, cls) {
+      const line = document.createElement('div');
+      const text = document.createElement('span');
+      line.append(text);
+      pre.append(line);
+      for (let i = 1; i <= label.length; i++) {
+        text.textContent = label.slice(0, i);
+        if (!fast) await sleep(Math.random() < 0.05 ? rnd(140, 380) : rnd(5, 14));
+      }
+      if (!status) return line;
+      text.textContent = label.padEnd(34, '.') + ' ';
+      await wait(rnd(150, 420));
+      const s = document.createElement('span');
+      s.className = cls;
+      s.textContent = status;
+      line.append(s);
+      return line;
+    }
+
+    await row('> link target', 'socialpranker.github.io', 'hot');
+    await row('> handshake', 'ok', 'ok');
+    await row('> route via legacy subnet 0x3F', 'ok', 'ok');
+
+    const sync = document.createElement('div');
+    pre.append(sync);
+    let p = 0;
+    while (p < 100) {
+      const loss = Math.random() < 0.14;
+      p = Math.max(0, Math.min(100, p + (loss ? -rnd(4, 9) : rnd(5, 15))));
+      const f = Math.round(p / 5);
+      sync.textContent = `  sync [${'█'.repeat(f)}${'░'.repeat(20 - f)}] ${String(Math.round(p)).padStart(3, ' ')}%${loss ? '  packet loss, retry' : ''}`;
+      if (fast) break;
+      await sleep(loss ? rnd(220, 420) : rnd(40, 90));
+    }
+    sync.textContent = `  sync [${'█'.repeat(20)}] 100%`;
+
+    await row('> ice', 'none detected', 'ok');
+    await row('> signal from beyond the wall', 'ignored', 'warn');
+    await row('> descending');
+
+    target = 6;
+    glowTarget = 1;
+    await wait(900);
+    scr.classList.add('out');
+    target = BASE;
+    glowTarget = 0.2;
+    try { sessionStorage.setItem('ion-jacked', '1'); } catch (e) {}
+    arrive();
+    setTimeout(() => scr.remove(), 550);
+  }
+
+  if (html.classList.contains('jack')) jackIn();
+  else { html.classList.add('ready'); watchSections(); }
+})();
+</script>
 </body>
 </html>
