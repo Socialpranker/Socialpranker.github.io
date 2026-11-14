@@ -1,113 +1,251 @@
 <!DOCTYPE html>
-<!-- критика: Ф5 И4 Исп5 К5 Сд5 Р4 — editorial engineering log, монохром+1 акцент, serif display + mono, левое выравнивание, ноль карточек-в-3-колонки -->
+<!-- направление: hud-scifi, одна красная краска («стена файрвола»), бирюза только на + в диффах; mono только на данных, проза гротеском -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ion — engineering log</title>
 <meta name="description" content="Ion (Socialpranker). Fixing bugs in other people&rsquo;s open source, and writing down what actually broke.">
+<meta name="theme-color" content="#050304">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
   :root {
-    --ink: #1a1a1a;
-    --paper: #f4f1ea;
-    --muted: #6b6559;
-    --line: #d8d2c4;
-    --accent: #a8321e;
-    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ink: #e8e4da;
-      --paper: #17150f;
-      --muted: #948d7e;
-      --line: #322e24;
-      --accent: #e0674f;
-    }
+    color-scheme: dark;
+    --void: #050304;
+    --panel: #0d0809;
+    --red: #ff2a3d;
+    --blood: #7a0e1a;
+    --teal: #3fe0b0;
+    --ink: #ece4e4;
+    --muted: #9a8a8c;
+    --line: #2a1a1c;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+    --sans: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; background: var(--void); }
   body {
     margin: 0;
-    background: var(--paper);
+    min-height: 100vh;
     color: var(--ink);
-    font-family: var(--serif);
-    font-size: 19px;
+    font-family: var(--sans);
+    font-size: 18px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgba(255, 42, 61, 0.16), transparent 60%),
+      var(--void);
+    counter-reset: sec fix;
   }
-  .wrap { max-width: 46rem; margin: 0 auto; padding: 0 1.5rem; }
+  /* сканлайны поверх всего, но не перехватывают клики */
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+    z-index: 10;
+  }
+  ::selection { background: var(--red); color: var(--void); }
 
-  /* masthead — газетный, не SaaS-навбар */
-  header { border-bottom: 2px solid var(--ink); margin-top: 3.5rem; }
-  .masthead {
-    display: flex; flex-wrap: wrap; align-items: baseline;
-    justify-content: space-between; gap: 0.5rem 1rem; padding-bottom: 0.6rem;
-  }
-  .masthead h1 {
-    font-size: clamp(2.4rem, 7vw, 3.6rem); line-height: 1; margin: 0;
-    letter-spacing: -0.02em; font-weight: 600;
-  }
-  .masthead .meta {
-    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.12em; text-align: right;
-  }
-  .masthead .meta a { color: var(--muted); }
+  .wrap { max-width: 50rem; margin: 0 auto; padding: 0 1.5rem; }
 
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  a { color: var(--red); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+  code {
+    font-family: var(--mono); font-size: 0.86em;
+    color: var(--ink); background: rgba(255, 42, 61, 0.1);
+    padding: 0.05em 0.3em;
+  }
+
+  /* статус-строка: всё в ней — настоящие данные страницы */
+  .statusbar {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.4rem 1rem;
+    padding: 1.1rem 0 0.7rem;
+    border-bottom: 1px solid var(--blood);
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .statusbar .live::before {
+    content: ""; display: inline-block; width: 0.5em; height: 0.5em;
+    margin-right: 0.6em; background: var(--red); vertical-align: 0.05em;
+  }
+  .statusbar a { color: var(--muted); }
+  .statusbar a:hover { color: var(--red); }
+
+  /* hero: имя на всю ширину, глитч-срез — подпись страницы */
+  .hero { padding: 2.5rem 0 0; }
+  .glitch {
+    position: relative; display: inline-block;
+    margin: 0;
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(7rem, 34vw, 15rem);
+    line-height: 0.82; letter-spacing: -0.01em; text-transform: uppercase;
+    color: var(--ink);
+    cursor: default;
+  }
+  .glitch .g-layer {
+    position: absolute; inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .glitch .g-layer:nth-of-type(2) { color: var(--red); }
+  .glitch .g-layer:nth-of-type(3) { color: var(--blood); }
+  @media (prefers-reduced-motion: no-preference) {
+    .glitch .g-layer:nth-of-type(2) { animation: slice-a 0.7s steps(1) 0.25s 1; }
+    .glitch .g-layer:nth-of-type(3) { animation: slice-b 0.7s steps(1) 0.25s 1; }
+    .glitch:hover .g-layer:nth-of-type(2) { animation: slice-a2 0.5s steps(1) 1; }
+    .glitch:hover .g-layer:nth-of-type(3) { animation: slice-b2 0.5s steps(1) 1; }
+  }
+  @keyframes slice-a {
+    0%   { visibility: visible; clip-path: inset(8% 0 72% 0);  transform: translate(-0.06em, 0); }
+    20%  { visibility: visible; clip-path: inset(55% 0 30% 0); transform: translate(0.05em, 0); }
+    40%  { visibility: visible; clip-path: inset(30% 0 52% 0); transform: translate(-0.03em, 0); }
+    60%  { visibility: visible; clip-path: inset(78% 0 6% 0);  transform: translate(0.07em, 0); }
+    80%  { visibility: visible; clip-path: inset(18% 0 70% 0); transform: translate(-0.02em, 0); }
+    100% { visibility: hidden; }
+  }
+  @keyframes slice-b {
+    0%   { visibility: visible; clip-path: inset(62% 0 20% 0); transform: translate(0.05em, 0); }
+    20%  { visibility: visible; clip-path: inset(12% 0 74% 0); transform: translate(-0.07em, 0); }
+    40%  { visibility: visible; clip-path: inset(70% 0 12% 0); transform: translate(0.03em, 0); }
+    60%  { visibility: visible; clip-path: inset(40% 0 44% 0); transform: translate(-0.05em, 0); }
+    80%  { visibility: visible; clip-path: inset(85% 0 2% 0);  transform: translate(0.04em, 0); }
+    100% { visibility: hidden; }
+  }
+  /* те же кадры под другим именем, чтобы hover перезапускал анимацию */
+  @keyframes slice-a2 { 0%, 99% { visibility: visible; } 0% { clip-path: inset(40% 0 45% 0); transform: translate(0.06em, 0); } 33% { clip-path: inset(10% 0 78% 0); transform: translate(-0.05em, 0); } 66% { clip-path: inset(66% 0 18% 0); transform: translate(0.03em, 0); } 100% { visibility: hidden; } }
+  @keyframes slice-b2 { 0%, 99% { visibility: visible; } 0% { clip-path: inset(75% 0 8% 0); transform: translate(-0.06em, 0); } 33% { clip-path: inset(28% 0 58% 0); transform: translate(0.05em, 0); } 66% { clip-path: inset(5% 0 82% 0); transform: translate(-0.03em, 0); } 100% { visibility: hidden; } }
+
+  /* стена: красная полоса с делениями под именем */
+  .wall {
+    height: 0.6rem; margin: 1.1rem 0 0;
+    background:
+      repeating-linear-gradient(90deg, var(--void) 0 2px, transparent 2px 14px),
+      linear-gradient(90deg, var(--red) 0 38%, var(--blood) 38% 71%, var(--red) 71% 79%, var(--blood) 79%);
+  }
+  .readout {
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1.6rem;
+    margin-top: 0.7rem;
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .readout b { color: var(--ink); font-weight: 600; }
+  .readout .add { color: var(--teal); }
+  .readout .del { color: var(--red); }
 
   .lede {
-    font-size: 1.32rem; line-height: 1.5; margin: 2.2rem 0 0;
-    color: var(--ink);
+    font-size: clamp(1.2rem, 2.6vw, 1.45rem); line-height: 1.5;
+    margin: 2.4rem 0 0; max-width: 40rem;
   }
-  .lede em { font-style: italic; }
+  .lede em { font-style: normal; color: var(--red); }
 
-  section { margin-top: 3.2rem; }
+  section { margin-top: 4.2rem; counter-increment: sec; }
   h2 {
+    display: flex; align-items: baseline; gap: 0.9rem;
+    margin: 0 0 1.5rem; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--display); font-weight: 600;
+    font-size: 1.9rem; line-height: 1.1; letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  h2::before {
+    content: "//" counter(sec, decimal-leading-zero);
     font-family: var(--mono); font-size: 0.75rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted);
-    margin: 0 0 1.4rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--line);
+    letter-spacing: 0.1em; color: var(--red);
   }
   p { margin: 0 0 1.1rem; }
+  p strong { font-weight: 600; color: var(--ink); }
   .muted { color: var(--muted); }
 
-  /* журнал: записи, не карточки. Разные, живут в потоке. */
-  .entry { padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
-  .entry:first-of-type { padding-top: 0; }
-  .entry-head {
-    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.8rem;
-    margin-bottom: 0.5rem;
+  /* рамка-прицел: две угловые засечки */
+  .framed { position: relative; }
+  .framed::before, .framed::after {
+    content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
   }
-  .entry-head .repo {
-    font-family: var(--mono); font-size: 0.9rem; font-weight: 600;
-    color: var(--ink);
-  }
-  .entry-head .diff {
-    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
-    font-variant-numeric: tabular-nums; margin-left: auto;
-  }
-  .entry-head .diff .add { color: #4f7a3a; }
-  .entry-head .diff .del { color: var(--accent); }
-  @media (prefers-color-scheme: dark) { .entry-head .diff .add { color: #7fae63; } }
-  .entry .title { font-size: 1.12rem; margin: 0 0 0.5rem; font-weight: 600; }
-  .entry .body { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
-  .entry .body .what { color: var(--muted); }
+  .framed::before { top: -1px; left: -1px; border-top: 2px solid var(--red); border-left: 2px solid var(--red); }
+  .framed::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--red); border-right: 2px solid var(--red); }
 
   .ai-note {
-    font-size: 1rem; line-height: 1.62;
-    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem;
-    margin: 0 0 1.1rem;
+    font-size: 1.05rem; line-height: 1.62;
+    margin: 0 0 1.6rem; padding: 1.1rem 1.3rem;
+    background: var(--panel); border: 1px solid var(--line);
   }
-  .ai-note strong { font-weight: 600; }
-  ul.plain { margin: 0 0 1.1rem; padding-left: 1.2rem; }
-  ul.plain li { margin-bottom: 0.4rem; font-size: 1rem; line-height: 1.55; }
+  ul.plain { margin: 0 0 1.3rem; padding: 0; list-style: none; }
+  ul.plain li {
+    position: relative; padding-left: 1.5rem; margin-bottom: 0.5rem;
+    font-size: 1rem; line-height: 1.58;
+  }
+  ul.plain li::before {
+    content: ">"; position: absolute; left: 0; top: 0;
+    font-family: var(--mono); font-weight: 600; color: var(--red);
+  }
+
+  /* журнал: записи-панели с индексом и диффом */
+  .entry {
+    counter-increment: fix;
+    margin: 0 0 1.1rem; padding: 1.2rem 1.3rem 1.3rem;
+    background: var(--panel); border: 1px solid var(--line);
+    transition: border-color 0.2s;
+  }
+  .entry:hover { border-color: var(--blood); }
+  .entry-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.9rem;
+    margin-bottom: 0.6rem;
+    font-family: var(--mono); font-size: 0.78rem;
+  }
+  .entry-head::before {
+    content: "FIX_" counter(fix, decimal-leading-zero);
+    color: var(--red); font-weight: 600; letter-spacing: 0.08em;
+  }
+  .entry-head .repo { color: var(--ink); font-weight: 600; }
+  .entry-head .diff { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .entry-head .diff .add { color: var(--teal); }
+  .entry-head .diff .del { color: var(--red); }
+  .entry .title {
+    margin: 0 0 0.55rem;
+    font-family: var(--display); font-weight: 600;
+    font-size: 1.45rem; line-height: 1.2; letter-spacing: 0.01em;
+  }
+  .entry .title code { font-size: 0.8em; }
+  .entry .body { margin: 0; font-size: 1rem; line-height: 1.6; }
+  .entry .body .what {
+    font-family: var(--mono); font-size: 0.74rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--red);
+  }
+
+  /* записи «расшифровываются» при входе в экран; без поддержки или с reduced-motion видны сразу */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .entry {
+        animation: decrypt linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 55%;
+      }
+    }
+  }
+  @keyframes decrypt {
+    from { clip-path: inset(0 0 100% 0); opacity: 0.3; border-color: var(--red); }
+    to   { clip-path: inset(0 0 0 0);    opacity: 1; }
+  }
 
   footer {
-    margin: 4rem 0 3rem; padding-top: 1.2rem; border-top: 2px solid var(--ink);
-    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.1em;
+    margin: 4.5rem 0 0; padding: 1rem 0 2.5rem;
+    border-top: 1px solid var(--blood);
     display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem;
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--red); }
+
+  @media (max-width: 520px) {
+    body { font-size: 17px; }
+    .entry { padding: 1rem 1rem 1.1rem; }
+    .entry-head .diff { margin-left: 0; width: 100%; }
+    h2 { font-size: 1.6rem; }
   }
 </style>
 </head>
@@ -115,10 +253,17 @@
 <div class="wrap">
 
   <header>
-    <div class="masthead">
-      <h1>Ion</h1>
-      <div class="meta">
-        <a href="https://github.com/Socialpranker">github.com/Socialpranker</a>
+    <div class="statusbar">
+      <span class="live">Engineering log</span>
+      <a href="https://github.com/Socialpranker">github.com/Socialpranker</a>
+    </div>
+    <div class="hero">
+      <h1 class="glitch"><span>Ion</span><span class="g-layer" aria-hidden="true">Ion</span><span class="g-layer" aria-hidden="true">Ion</span></h1>
+      <div class="wall" aria-hidden="true"></div>
+      <div class="readout">
+        <span>Fixes logged <b>6</b></span>
+        <span>Lines <b class="add">+362</b> <b class="del">-41</b></span>
+        <span>Trackers <b>0</b></span>
       </div>
     </div>
   </header>
@@ -147,7 +292,7 @@
 
   <section>
     <h2>Working with AI, openly</h2>
-    <p class="ai-note">
+    <p class="ai-note framed">
       I use AI as part of how I work, and I disclose it on every pull request, naming
       the model that did the bulk of the work on that specific change. Here is what
       that means in practice.
@@ -179,7 +324,7 @@
   <section>
     <h2>Recent fixes</h2>
 
-    <div class="entry">
+    <div class="entry framed">
       <div class="entry-head">
         <span class="repo">restic/restic</span>
         <span class="diff"><span class="add">+91</span> <span class="del">-20</span></span>
@@ -191,7 +336,7 @@
       so config lands first.</p>
     </div>
 
-    <div class="entry">
+    <div class="entry framed">
       <div class="entry-head">
         <span class="repo">vectordotdev/vector</span>
         <span class="diff"><span class="add">+52</span> <span class="del">-3</span></span>
@@ -202,7 +347,7 @@
       than one non-default checksum. The fix limits checksum calculation to when it&rsquo;s actually required.</p>
     </div>
 
-    <div class="entry">
+    <div class="entry framed">
       <div class="entry-head">
         <span class="repo">prettier/prettier</span>
         <span class="diff"><span class="add">+68</span> <span class="del">-0</span></span>
@@ -214,7 +359,7 @@
       allowlist, not in the formatter.</p>
     </div>
 
-    <div class="entry">
+    <div class="entry framed">
       <div class="entry-head">
         <span class="repo">zellij-org/zellij</span>
         <span class="diff"><span class="add">+108</span> <span class="del">-0</span></span>
@@ -226,7 +371,7 @@
       the vendored code untouched.</p>
     </div>
 
-    <div class="entry">
+    <div class="entry framed">
       <div class="entry-head">
         <span class="repo">rclone/rclone</span>
         <span class="diff"><span class="add">+19</span> <span class="del">-4</span></span>
@@ -238,7 +383,7 @@
       confirm at runtime since I couldn&rsquo;t.</p>
     </div>
 
-    <div class="entry">
+    <div class="entry framed">
       <div class="entry-head">
         <span class="repo">sveltejs/kit</span>
         <span class="diff"><span class="add">+24</span> <span class="del">-14</span></span>
@@ -254,8 +399,9 @@
   <section>
     <h2>Colophon</h2>
     <p class="muted">
-      One static HTML file, no build step, no trackers, no analytics. Set in the
-      system old-style serif with a monospace for code.
+      One static HTML file, no build step, no trackers, no analytics. Set in
+      Barlow Condensed and Barlow, with JetBrains Mono for code and data; the
+      fonts load from Google Fonts.
     </p>
   </section>
 
