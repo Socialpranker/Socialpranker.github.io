@@ -359,6 +359,30 @@
   .motion-toggle:hover, .motion-toggle:focus-visible { color: var(--red); border-color: var(--red); outline: none; }
 
   /* пока колонка текста и датчик не помещаются рядом, датчик уходит в нижнюю строку */
+  /* лента CVE: карточка-уведомление в правом верхнем углу */
+  .feed {
+    position: fixed; top: 3.2rem; right: 1rem; z-index: 40;
+    width: min(23rem, calc(100vw - 2rem));
+  }
+  .cve {
+    padding: 0.75rem 0.9rem 0.8rem;
+    background: rgba(13, 8, 9, 0.96); border: 1px solid var(--red);
+    font-family: var(--mono); font-size: 0.72rem; line-height: 1.55; color: var(--muted);
+    cursor: pointer;
+  }
+  .cve .sev { float: right; color: var(--red); font-weight: 600; letter-spacing: 0.12em; }
+  .cve .id { color: var(--ink); font-weight: 600; letter-spacing: 0.06em; }
+  .cve .what { margin-top: 0.3rem; font-family: var(--sans); font-size: 0.95rem; line-height: 1.4; color: var(--ink); }
+  .cve .verdict { margin-top: 0.4rem; min-height: 1.1em; color: var(--teal); }
+  .cve .verdict:not(:empty)::before { content: "> "; color: var(--muted); }
+  html.motion .cve { animation: cve-in 0.35s steps(4) both; }
+  html.motion .cve.out { animation: jack-out 0.45s steps(5) forwards; }
+  @keyframes cve-in {
+    0%   { opacity: 0; transform: translateX(28px); clip-path: inset(0 0 100% 0); }
+    50%  { opacity: 1; transform: translateX(-6px); clip-path: inset(0 0 45% 0); }
+    100% { transform: none; clip-path: inset(0); }
+  }
+
   @media (max-width: 1180px) {
     html.js .hud {
       left: 0; right: 0; bottom: 0;
@@ -658,10 +682,101 @@
     target = BASE + 2.2 * power;
     setTimeout(() => { target = BASE; }, 450);
   }
-  (function ambient() {
-    setTimeout(() => { if (!document.hidden) lag(rnd(0.5, 1)); ambient(); }, rnd(7000, 15000));
-  })();
-  document.querySelector('.glitch').addEventListener('click', () => { lag(1.4); pulse(1); });
+  /* ---- лента CVE: уязвимость «прилетает», страница дёргается, потом вердикт.
+     Реальные записи с настоящими ID; шуточные — с невозможными годами, чтобы их нельзя было принять за настоящие. */
+  const CVES = [
+    { id: 'CVE-2021-44228', sev: 'CRITICAL', what: 'Log4Shell: log4j ran code it was only asked to log.', verdict: 'no Java on this page. sleeping fine.' },
+    { id: 'CVE-2014-0160', sev: 'HIGH', what: 'Heartbleed: OpenSSL heartbeat read past the buffer.', verdict: 'this site has no heart. safe.' },
+    { id: 'CVE-2024-3094', sev: 'CRITICAL', what: 'xz: a very helpful maintainer, for two years.', verdict: 'reading every diff myself. twice.' },
+    { id: 'CVE-2014-6271', sev: 'CRITICAL', what: 'Shellshock: bash ran whatever trailed a function in an env var.', verdict: 'static page. no env, no bash, no problem.' },
+    { id: 'CVE-2016-5195', sev: 'HIGH', what: 'Dirty COW: a race in copy-on-write.', verdict: 'races are my thing. see FIX_01.' },
+    { id: 'CVE-2017-5754', sev: 'MEDIUM', what: 'Meltdown: the CPU guessed ahead and told everyone.', verdict: 'can’t patch silicon. moved on.' },
+    { id: 'CVE-2024-6387', sev: 'HIGH', what: 'regreSSHion: a 2006 sshd bug came back in OpenSSH 8.5.', verdict: 'this is why the test fails without the fix.' },
+    { id: 'CVE-1970-0001', sev: 'WONTFIX', what: 'Works on my machine.', verdict: 'shipping the machine.' },
+    { id: 'CVE-2038-0119', sev: 'SCHEDULED', what: '32-bit time_t overflows on 19 Jan 2038, 03:14:07 UTC.', verdict: 'calendar invite sent.' },
+    { id: 'CVE-0000-0053', sev: 'DNS', what: 'Site unreachable. Root cause unknown.', verdict: 'it was DNS.' },
+  ];
+  for (let i = CVES.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [CVES[i], CVES[j]] = [CVES[j], CVES[i]]; }
+  let cveIndex = 0;
+
+  const feed = document.createElement('div');
+  feed.className = 'feed';
+  feed.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(feed);
+  let toastBusy = false;
+  let closeCurrent = null;
+  let toastToken = 0;
+
+  /* force: пасхалка вытесняет текущую карточку ленты, а не ждёт её */
+  async function toast({ id, sev, what, verdict }, force = false) {
+    if (html.classList.contains('jack')) return;
+    if (!force && (!motion || toastBusy)) return;
+    if (closeCurrent) closeCurrent();
+    const token = ++toastToken;
+    toastBusy = true;
+    const el = document.createElement('div');
+    el.className = 'cve';
+    el.innerHTML = '<span class="sev"></span><div class="id"></div><div class="what"></div><div class="verdict"></div>';
+    el.querySelector('.sev').textContent = sev;
+    el.querySelector('.what').textContent = what;
+    let closed = false;
+    closeCurrent = () => { closed = true; el.remove(); };
+    el.addEventListener('click', closeCurrent);
+    feed.appendChild(el);
+    scramble(el.querySelector('.id'), id, 500);
+    lag(0.5);
+    await sleep(1500);
+    const v = el.querySelector('.verdict');
+    for (let i = 1; i <= verdict.length && !closed; i++) {
+      v.textContent = verdict.slice(0, i);
+      if (motion) await sleep(rnd(14, 34));
+    }
+    await sleep(4500);
+    if (!closed) {
+      el.classList.add('out');
+      await sleep(450);
+      el.remove();
+    }
+    if (token === toastToken) { toastBusy = false; closeCurrent = null; }
+  }
+  function runFeed(delay) {
+    setTimeout(async () => {
+      if (!document.hidden) await toast(CVES[cveIndex++ % CVES.length]);
+      runFeed(rnd(18000, 30000));
+    }, delay);
+  }
+
+  /* ---- пасхалки */
+  let pokes = [];
+  document.querySelector('.glitch').addEventListener('click', () => {
+    lag(1.4); pulse(1);
+    const now = Date.now();
+    pokes = pokes.filter((t0) => now - t0 < 3000).concat(now);
+    if (pokes.length >= 5) {
+      pokes = [];
+      toast({ id: 'INC-0001', sev: 'SEV-2', what: 'Someone keeps clicking prod.', verdict: 'it’s you. postmortem at 10:00.' }, true);
+    }
+  });
+
+  let typed = '';
+  addEventListener('keydown', (e) => {
+    if (e.key.length !== 1) return;
+    typed = (typed + e.key.toLowerCase()).slice(-4);
+    if (typed === 'sudo') {
+      toast({ id: 'sudo', sev: 'DENIED', what: 'guest is not in the sudoers file.', verdict: 'this incident will be reported.' }, true);
+    }
+  });
+
+  const realTitle = document.title;
+  document.addEventListener('visibilitychange', () => {
+    document.title = document.hidden ? 'brb: npm install…' : realTitle;
+  });
+
+  console.log(
+    '%cION%c\nYou opened DevTools on a static page. Respect.\nOne HTML file, no build step. The source is the documentation.\nFound a bug? You know the drill: issue, failing test, smallest fix.\n→ https://github.com/Socialpranker/Socialpranker.github.io',
+    'font: 700 28px sans-serif; color: #ff2a3d;',
+    'font: 12px monospace; color: #9a8a8c;'
+  );
 
   /* ---- погружение по разделам и датчик глубины */
   const GLYPHS = '▓▒░<>/\\|#%&$*+=01';
@@ -734,6 +849,7 @@
     html.classList.add('ready', 'arrived');
     setTimeout(() => html.classList.remove('arrived'), 800);
     watchSections();
+    runFeed(6000);
   }
 
   async function jackIn() {
@@ -770,9 +886,9 @@
       return line;
     }
 
-    await row('> link target', 'socialpranker.github.io', 'hot');
-    await row('> handshake', 'ok', 'ok');
-    await row('> route via legacy subnet 0x3F', 'ok', 'ok');
+    await row('$ ssh guest@socialpranker.github.io');
+    await row('> resolve host', 'ok, first try. suspicious', 'ok');
+    await row('> tls', '1.3, heartbeat disabled', 'ok');
 
     const sync = document.createElement('div');
     pre.append(sync);
@@ -781,15 +897,15 @@
       const loss = Math.random() < 0.14;
       p = Math.max(0, Math.min(100, p + (loss ? -rnd(4, 9) : rnd(5, 15))));
       const f = Math.round(p / 5);
-      sync.textContent = `  sync [${'█'.repeat(f)}${'░'.repeat(20 - f)}] ${String(Math.round(p)).padStart(3, ' ')}%${loss ? '  packet loss, retry' : ''}`;
+      sync.textContent = `  npm install [${'█'.repeat(f)}${'░'.repeat(20 - f)}] ${String(Math.round(p)).padStart(3, ' ')}%${loss ? '  peer dep conflict, retrying' : ''}`;
       if (fast) break;
       await sleep(loss ? rnd(220, 420) : rnd(40, 90));
     }
-    sync.textContent = `  sync [${'█'.repeat(20)}] 100%`;
+    sync.textContent = `  npm install [${'█'.repeat(20)}] 100%  1,312 packages, one of them is left-pad`;
 
-    await row('> ice', 'none detected', 'ok');
-    await row('> signal from beyond the wall', 'ignored', 'warn');
-    await row('> descending');
+    await row('> scan for CVEs', 'none here, plenty upstream', 'ok');
+    await row('> rm -rf node_modules', 'freed 2.3 GB', 'ok');
+    await row('> open engineering log');
 
     target = 6;
     glowTarget = 1;
@@ -803,7 +919,7 @@
   }
 
   if (html.classList.contains('jack')) jackIn();
-  else { html.classList.add('ready'); watchSections(); }
+  else { html.classList.add('ready'); watchSections(); runFeed(8000); }
 })();
 </script>
 </body>
