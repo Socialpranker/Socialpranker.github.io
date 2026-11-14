@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — SocialPranker</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#050304">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #050304; --panel: #0d0809; --red: #ff2a3d; --blood: #7a0e1a;
+    --teal: #3fe0b0; --ink: #ece4e4; --muted: #9a8a8c; --line: #2a1a1c;
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --sans: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--void); color: var(--ink); }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: var(--sans); font-size: 1.05rem; line-height: 1.6;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(122, 14, 26, 0.35), transparent 60%),
+      var(--void);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+  }
+  a { color: var(--red); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .wrap { max-width: 47rem; margin: 0 auto; padding: 0 clamp(1.2rem, 5vw, 2rem) 3rem; }
+  .statusbar {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem 1rem;
+    padding: 1.1rem 0 0.9rem; border-bottom: 1px solid var(--blood);
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  }
+  .statusbar .live::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 0.55rem;
+    background: var(--red); vertical-align: 1px;
+  }
+  .statusbar a { color: var(--muted); }
+  h1 {
+    position: relative; display: inline-block; margin: 3rem 0 0.4rem;
+    font-family: var(--display); font-weight: 700; font-size: clamp(7rem, 34vw, 13rem); line-height: 0.82;
+  }
+  h1 .g { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+  h1 .g:nth-of-type(2) { color: var(--red); }
+  h1 .g:nth-of-type(3) { color: var(--blood); }
+  @media (prefers-reduced-motion: no-preference) {
+    h1 .g:nth-of-type(2) { animation: slice-a 0.7s steps(1) 0.3s 1; }
+    h1 .g:nth-of-type(3) { animation: slice-b 0.7s steps(1) 0.3s 1; }
+  }
+  @keyframes slice-a {
+    0% { visibility: visible; clip-path: inset(10% 0 70% 0); transform: translate(-6px, 0); }
+    35% { clip-path: inset(55% 0 20% 0); transform: translate(5px, 0); }
+    70% { clip-path: inset(30% 0 50% 0); transform: translate(-3px, 0); }
+    100% { visibility: hidden; }
+  }
+  @keyframes slice-b {
+    0% { visibility: visible; clip-path: inset(65% 0 10% 0); transform: translate(6px, 0); }
+    35% { clip-path: inset(20% 0 60% 0); transform: translate(-5px, 0); }
+    70% { clip-path: inset(75% 0 5% 0); transform: translate(3px, 0); }
+    100% { visibility: hidden; }
+  }
+  .sub {
+    margin: 0 0 2rem; font-family: var(--display); font-weight: 600; font-size: 1.6rem;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  pre {
+    margin: 0 0 1.6rem; padding: 1.1rem 1.3rem; overflow-x: auto;
+    background: var(--panel); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.7; color: var(--muted);
+  }
+  @media (max-width: 600px) { pre { white-space: pre-wrap; overflow-wrap: anywhere; } }
+  pre .cmd { color: var(--ink); }
+  pre .bad { color: var(--red); }
+  pre .ok { color: var(--teal); }
+  p { margin: 0 0 1.4rem; max-width: 38rem; }
+  .home {
+    display: inline-block; padding: 0.55rem 1rem; border: 1px solid var(--red);
+    font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .home:hover { background: var(--red); color: var(--void); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="statusbar">
+    <span class="live">Signal lost</span>
+    <a href="/">socialpranker.github.io</a>
+  </div>
+
+  <h1><span>404</span><span class="g" aria-hidden="true">404</span><span class="g" aria-hidden="true">404</span></h1>
+  <p class="sub">Nothing at this address</p>
+
+<pre><span class="cmd">$ curl -I https://socialpranker.github.io<span id="path">/this-page</span></span>
+<span class="bad">HTTP/2 404</span>
+x-root-cause: link rot, a typo, or a page that never existed
+x-blame: <span class="ok">not DNS, for once</span>
+x-suggested-fix: go back to the surface
+x-postmortem: none, this is fine</pre>
+
+  <p>
+    If a link on this site sent you here, that&rsquo;s a bug, and you know where I stand on
+    those: <a href="https://github.com/Socialpranker/Socialpranker.github.io/issues/new">open an issue</a>
+    with the URL.
+  </p>
+
+  <a class="home" href="/">&lt; Back to surface</a>
+</div>
+<script>
+  const path = location.pathname + location.search;
+  if (path && path !== '/404.html') document.getElementById('path').textContent = path;
+</script>
+</body>
+</html>
